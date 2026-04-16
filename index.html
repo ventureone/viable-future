@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Viable Future</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg: #08080a;
+  --surface: #101014;
+  --border: #1c1c22;
+  --text: #c8c5be;
+  --text-dim: #6b6860;
+  --text-faint: #3a3830;
+  --accent: #d4c5a0;
+  --accent-dim: #8a7e60;
+
+  --boundary: #c8a84e;
+  --shallow: #b8aa5e;
+  --mid: #8ab070;
+  --deep: #5a9a68;
+  --frozen: #4a4844;
+  --ghost: #6a5848;
+  --ghost-sed: #1e1c16;
+  --shielded: #7088a8;
+  --player: #d4c5a0;
+
+  --love-c: #8ab878;
+  --fear-c: #7088a8;
+  --compress-c: #c89848;
+  --regret-c: #9878a8;
+
+  --hope-line: #d4c5a0;
+  --interior-line: #7088a8;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;overflow:hidden;}
+
+#game{display:grid;grid-template-columns:1fr 330px;height:100vh;}
+
+#cwrap{position:relative;overflow:hidden;background:var(--bg);}
+canvas{display:block;width:100%;height:100%;cursor:default;}
+
+#turnlbl{position:absolute;top:22px;left:26px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;pointer-events:none;}
+#cfgtog{position:absolute;top:22px;right:26px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--text-faint);cursor:pointer;text-transform:uppercase;z-index:10;transition:color .2s;}
+#cfgtog:hover{color:var(--text-dim);}
+#tip{position:absolute;display:none;background:rgba(16,16,20,.95);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);pointer-events:none;z-index:50;white-space:nowrap;}
+
+/* Charts overlay at bottom of canvas */
+#charts{position:absolute;bottom:18px;left:26px;right:26px;height:90px;pointer-events:none;display:flex;flex-direction:column;gap:4px;}
+.chartwrap{flex:1;position:relative;background:rgba(12,12,16,0.35);border-radius:3px;overflow:hidden;}
+.chartlbl{position:absolute;top:3px;left:6px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--text-faint);z-index:2;text-transform:uppercase;}
+.chartval{position:absolute;top:3px;right:6px;font-family:'JetBrains Mono',monospace;font-size:10px;z-index:2;}
+.chartval.hope{color:var(--hope-line);}
+.chartval.int{color:var(--interior-line);}
+.chartcv{position:absolute;inset:0;width:100%;height:100%;}
+
+/* Legend */
+#legend{position:absolute;top:22px;left:140px;display:flex;gap:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-faint);pointer-events:none;}
+.li{display:flex;align-items:center;gap:4px;}
+.ld{width:7px;height:7px;border-radius:50%;}
+
+/* Panel */
+#panel{background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;padding:24px 22px;overflow-y:auto;}
+#panel h1{font-size:17px;font-weight:500;color:var(--accent);margin-bottom:2px;}
+.sub{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-dim);margin-bottom:22px;letter-spacing:.05em;}
+
+#stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px;}
+.st{display:flex;flex-direction:column;}
+.sl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px;}
+.sv{font-size:18px;font-weight:400;}
+
+#albl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;}
+#acts{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+
+.ab{background:transparent;border:1px solid var(--border);color:var(--text);font-family:'EB Garamond',Georgia,serif;font-size:13.5px;padding:11px 14px;text-align:left;cursor:pointer;border-radius:4px;transition:all .2s;}
+.ab:hover:not(:disabled){border-color:var(--accent-dim);color:var(--accent);background:rgba(212,197,160,0.02);}
+.ab:disabled{opacity:.28;cursor:not-allowed;}
+.ab .ad{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;letter-spacing:.03em;}
+.ab[data-t="love"]{border-left:2px solid var(--love-c);}
+.ab[data-t="fear"]{border-left:2px solid var(--fear-c);}
+.ab[data-t="compress"]{border-left:2px solid var(--compress-c);}
+.ab[data-t="regret"]{border-left:2px solid var(--regret-c);}
+
+#nar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+#nartxt{font-size:13.5px;line-height:1.65;color:var(--text-dim);font-style:italic;min-height:60px;transition:opacity .45s;}
+
+/* End */
+#endscr{display:none;position:fixed;inset:0;background:rgba(6,6,8,.93);z-index:100;justify-content:center;align-items:center;flex-direction:column;text-align:center;padding:40px;backdrop-filter:blur(4px);}
+#endscr.vis{display:flex;}
+#endscr h2{font-size:28px;font-weight:400;color:var(--accent);margin-bottom:16px;letter-spacing:.01em;}
+.eb{font-size:15px;line-height:1.75;color:var(--text-dim);max-width:480px;margin-bottom:26px;font-style:italic;}
+.es{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);margin-bottom:28px;line-height:1.8;}
+.ebtn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'EB Garamond',serif;font-size:14px;padding:10px 28px;cursor:pointer;border-radius:4px;transition:all .25s;}
+.ebtn:hover{border-color:var(--accent-dim);color:var(--accent);}
+
+/* Config */
+#cfgov{display:none;position:fixed;inset:0;background:rgba(6,6,8,.95);z-index:200;justify-content:center;align-items:center;padding:40px;}
+#cfgov.vis{display:flex;}
+#cfgp{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:30px 34px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;}
+#cfgp h2{font-size:17px;font-weight:500;color:var(--accent);margin-bottom:18px;}
+.cg{margin-bottom:16px;}
+.cg label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
+.cg input[type="range"]{width:100%;accent-color:var(--accent-dim);}
+.cg .cv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);float:right;margin-top:-16px;}
+.cg select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:7px;border-radius:3px;}
+#cfgbtns{display:flex;gap:12px;margin-top:22px;}
+#cfgbtns button{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'EB Garamond',serif;font-size:14px;padding:9px 16px;cursor:pointer;border-radius:4px;transition:all .25s;}
+#cfgbtns button:hover{border-color:var(--accent-dim);color:var(--accent);}
+
+/* Intro / About overlay */
+#introscr{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;justify-content:center;align-items:flex-start;padding:40px;overflow-y:auto;}
+#introscr.hidden{display:none;}
+#introbox{max-width:680px;width:100%;padding:40px 0;}
+#introbox h1{font-size:32px;font-weight:500;color:var(--accent);margin-bottom:4px;letter-spacing:-0.01em;}
+#introbox .tagline{font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text-faint);letter-spacing:0.08em;margin-bottom:32px;}
+#introbox h2{font-size:14px;font-family:'JetBrains Mono',monospace;color:var(--accent-dim);letter-spacing:0.08em;text-transform:uppercase;margin:28px 0 10px;font-weight:400;}
+#introbox p{font-size:15px;line-height:1.75;color:var(--text-dim);margin-bottom:14px;}
+#introbox p.lead{font-size:17px;color:var(--text);font-style:italic;margin-bottom:24px;line-height:1.7;}
+#introbox .opdef{display:flex;gap:12px;margin-bottom:10px;align-items:baseline;}
+#introbox .opdef strong{min-width:110px;font-size:14px;color:var(--accent);font-weight:500;font-family:'EB Garamond',serif;}
+#introbox .opdef .dd{font-size:14px;color:var(--text-dim);line-height:1.55;flex:1;}
+#introbox a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-dim);}
+#introbox a:hover{color:var(--text);border-bottom-color:var(--text);}
+#introstart{display:inline-block;margin-top:32px;background:transparent;border:1px solid var(--accent-dim);color:var(--accent);font-family:'EB Garamond',serif;font-size:15px;padding:12px 36px;cursor:pointer;border-radius:4px;transition:all 0.25s;}
+#introstart:hover{background:var(--accent-dim);color:var(--bg);}
+#aboutlink{font-size:12px;color:var(--text-faint);margin-left:20px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;transition:color 0.2s;}
+#aboutlink:hover{color:var(--text-dim);}
+#aboutbtn{position:absolute;top:52px;right:26px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--text-faint);cursor:pointer;text-transform:uppercase;z-index:10;transition:color .2s;}
+#aboutbtn:hover{color:var(--text-dim);}
+.small{font-size:13px;color:var(--text-faint);font-style:italic;}
+
+@media(max-width:768px){
+  #game{grid-template-columns:1fr;grid-template-rows:50vh 1fr;}
+  #panel{padding:14px;}
+  #legend{display:none;}
+  #charts{height:70px;}
+  #introbox h1{font-size:24px;}
+  #introbox p.lead{font-size:15px;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- Intro / About screen -->
+<div id="introscr">
+  <div id="introbox">
+    <h1>The Viable Future</h1>
+    <div class="tagline">preserving the space of possible futures</div>
+
+    <p class="lead">A system can become more efficient, more coordinated, more predictable — and less able to change. What appears as strength can be a contraction. This game is about that contraction.</p>
+
+    <h2>What you are looking at</h2>
+    <p>A graph of possible futures. The dark canvas is the void — everywhere the graph is not. Deep green nodes are <em>interior</em>: futures buffered from the void by layers of other futures. Amber nodes are <em>boundary</em>: they face the void directly. The colored gradient is the depth of your viability.</p>
+
+    <p>Your task is not to grow the graph or to win. It is to preserve the <em>interior</em> — the space of futures that remain reopenable under perturbation. This is tracked as <strong>H(t)</strong>, the sum of every node's depth. Watch the two charts. When H(t) falls, you have fewer genuinely different futures available, even if the structure looks intact.</p>
+
+    <h2>Your four choices</h2>
+    <div class="opdef"><strong>Weave</strong><span class="dd">Bridge two distant regions. Thickens the interior through connection. If the region you bridge is already cohesive enough, growth may happen on its own at the frontier. Growth is <em>earned</em>, not chosen.</span></div>
+    <div class="opdef"><strong>Fear</strong><span class="dd">Harden the most exposed region. Freezes boundary nodes and shields them from erosion. Safer in the short term. But frozen nodes cannot participate in future weaving — protection always narrows.</span></div>
+    <div class="opdef"><strong>Compression</strong><span class="dd">Prune the weakest nodes. Feels clean, intelligent, clarifying. This is the action that feels best. It is also the fastest way to thin the future.</span></div>
+    <div class="opdef"><strong>Regret</strong><span class="dd">Reopen something recently closed. Thaws frozen nodes, or recovers losses before they sediment permanently. A repair channel, not a punishment.</span></div>
+
+    <h2>The background process</h2>
+    <p>While you choose, <em>sedimentation</em> runs quietly. Unused paths grow brittle. Unvisited nodes lose activity and eventually freeze. Ghost losses beyond the recovery window become permanent. You cannot turn this off. It is the cost of existing in irreversible time.</p>
+
+    <h2>The ending</h2>
+    <p>The game does not end in a crash. It ends when H(t) reaches zero — when every surviving node is boundary, when no depth remains. The graph may still exist. It may still look ordered. But nothing can change.</p>
+
+    <p class="small">Based on "A Generative Grammar of Viable Futures" and "Operator Semantics of Viable Futures" by Rajendra Wadje (2025). <a href="#" onclick="document.getElementById('introscr').classList.add('hidden');return false;">Begin</a></p>
+
+    <button id="introstart" onclick="document.getElementById('introscr').classList.add('hidden')">Begin</button>
+  </div>
+</div>
+
+<div id="game">
+  <div id="cwrap">
+    <canvas id="cv"></canvas>
+    <div id="turnlbl">Turn <span id="tnum">0</span></div>
+    <div id="legend">
+      <div class="li"><div class="ld" style="background:var(--deep)"></div>Deep interior</div>
+      <div class="li"><div class="ld" style="background:var(--mid)"></div>Interior</div>
+      <div class="li"><div class="ld" style="background:var(--boundary)"></div>Boundary</div>
+      <div class="li"><div class="ld" style="background:var(--frozen);border:1px solid #5a5850"></div>Frozen</div>
+      <div class="li"><div class="ld" style="background:var(--ghost);border:1px dashed #7a6a58"></div>Recoverable</div>
+    </div>
+    <div id="cfgtog" onclick="toggleCfg()">&#9881; Configure</div>
+    <div id="aboutbtn" onclick="document.getElementById('introscr').classList.remove('hidden')">? About</div>
+    <div id="tip"></div>
+    <div id="charts">
+      <div class="chartwrap">
+        <div class="chartlbl">Hope H(t)</div>
+        <div class="chartval hope" id="cv-hope">0</div>
+        <canvas class="chartcv" id="chart-hope"></canvas>
+      </div>
+      <div class="chartwrap">
+        <div class="chartlbl">Interior count</div>
+        <div class="chartval int" id="cv-int">0</div>
+        <canvas class="chartcv" id="chart-int"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="panel">
+    <h1>The Viable Future</h1>
+    <div class="sub">preserving the space of possible futures</div>
+    <div id="stats">
+      <div class="st"><span class="sl">H(t)</span><span class="sv" style="color:var(--deep)" id="s-h">0</span></div>
+      <div class="st"><span class="sl">Interior</span><span class="sv" style="color:var(--mid)" id="s-int">0</span></div>
+      <div class="st"><span class="sl">Boundary</span><span class="sv" style="color:var(--boundary)" id="s-bnd">0</span></div>
+      <div class="st"><span class="sl">Frozen</span><span class="sv" style="color:var(--frozen)" id="s-frz">0</span></div>
+      <div class="st"><span class="sl">Lost</span><span class="sv" id="s-lost">0</span></div>
+      <div class="st"><span class="sl">Recoverable</span><span class="sv" id="s-rec">0</span></div>
+    </div>
+    <div id="albl">Choose your mode of action</div>
+    <div id="acts">
+      <button class="ab" data-t="love" id="b-love" onclick="applyOp('love')">Weave — connect &amp; thicken<span class="ad">Bridge two regions. Creates redundancy. May trigger growth.</span></button>
+      <button class="ab" data-t="fear" id="b-fear" onclick="applyOp('fear')">Fear — defend the present<span class="ad">Harden the most exposed region. Safer now, less generative.</span></button>
+      <button class="ab" data-t="compress" id="b-compress" onclick="applyOp('compress')">Compression — simplify &amp; clarify<span class="ad">Prune the weakest. Clean, efficient, thins the future.</span></button>
+      <button class="ab" data-t="regret" id="b-regret" onclick="applyOp('regret')">Regret — reopen a closed path<span class="ad">Restore the freshest recoverable loss. Before it sediments.</span></button>
+    </div>
+    <div id="nar"><div id="nartxt">You stand before a graph of possible futures. The deep green center is the interior — futures still buffered from the void. The amber edge is boundary, where the graph meets what is not. Choose how you want to relate to this.</div></div>
+  </div>
+</div>
+<div id="endscr">
+  <h2 id="et"></h2>
+  <div class="eb" id="ebody"></div>
+  <div class="es" id="estats"></div>
+  <div class="eb" id="ereflection" style="max-width:540px;border-top:1px solid var(--border);padding-top:24px;margin-top:4px;font-style:normal;color:var(--text-faint);font-size:14px;line-height:1.75;">
+    <p style="margin-bottom:14px;">The structure you just watched collapse is not imaginary. It describes what happens to organizations that streamline for efficiency, to people who narrow their lives in the name of stability, to systems that optimize their way into brittleness.</p>
+    <p style="margin-bottom:14px;">Sedimentation death does not look like failure. It looks like orderly continuation — until the capacity to become otherwise is gone, and by then it is too late to notice.</p>
+    <p style="color:var(--text-dim);">The question your system keeps asking is not <em>what are you achieving</em>, but <em>what futures are you still able to move into</em>. Those are different questions. Most systems only measure the first.</p>
+  </div>
+  <button class="ebtn" onclick="restart()" style="margin-top:28px;">Begin again</button>
+</div>
+<div id="cfgov">
+  <div id="cfgp">
+    <h2>Configuration</h2>
+    <div class="cg"><label>Grid rings <span class="cv" id="cv-r">3</span></label><input type="range" id="cfg-r" min="2" max="4" value="3" step="1" oninput="document.getElementById('cv-r').textContent=this.value"></div>
+    <div class="cg"><label>Narrative style</label><select id="cfg-s"><option value="poetic">Poetic / reflective</option><option value="systems">Systems / analytical</option><option value="minimal">Minimal</option></select></div>
+    <div id="cfgbtns"><button onclick="applyCfg()">Apply &amp; Restart</button><button onclick="toggleCfg()">Cancel</button></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const CFG = {
+  rings: 3,
+  hexSize: 54,
+  style: 'poetic',
+  sedGrace: 5,
+  ghostDecayBase: 18,          // slightly more forgiving
+  depthSmoothAlpha: 0.65,
+  exposureThreshold: 1.0,
+  growthBase: 0.55,            // raised: growth is more responsive
+  sedimentationRate: 0.05,     // was 0.08 — slower
+  activityDecay: 0.028,        // was 0.055 — much slower
+  freezeThreshold: 0.1,        // node freezes when activity drops below this
+  weavePropagationHops: 2,     // Love/Weave propagates activity 2 hops
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let nodes = [], edges = [], turn = 0, totalLost = 0, maxId = 0;
+let gameOver = false;
+let hoveredNode = null;
+let extVels = {};
+let hopeHistory = [];
+let intHistory = [];
+let peakHope = 0;
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const chHope = document.getElementById('chart-hope');
+const chInt = document.getElementById('chart-int');
+const chxHope = chHope.getContext('2d');
+const chxInt = chInt.getContext('2d');
+let W, H, vscale = 1;
+
+// ============================================================
+// HEX HELPERS
+// ============================================================
+function hexAxialNbs(q, r) {
+  return [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]].map(([dq,dr])=>[q+dq,r+dr]);
+}
+function axialToPixel(q, r, size) {
+  return { x: size * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r), y: size * (1.5 * r) };
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+const node = id => nodes.find(n => n.id === id);
+const alive = () => nodes.filter(n => n.active && !n.ghost);
+const aliveEdges = () => edges.filter(e => e.active);
+
+function nbs(id) {
+  return aliveEdges()
+    .filter(e => e.from === id || e.to === id)
+    .map(e => e.from === id ? e.to : e.from)
+    .filter(i => { const n = node(i); return n && n.active && !n.ghost; });
+}
+
+function activeDegree(id) {
+  const n = node(id);
+  if (!n || !n.active || n.ghost) return 0;
+  return nbs(id).filter(nid => { const nn = node(nid); return nn && !nn.frozen; }).length;
+}
+
+// ============================================================
+// GRAPH GENERATION
+// ============================================================
+function genGraph() {
+  nodes = []; edges = []; maxId = 0; extVels = {};
+  const R = CFG.rings, sz = CFG.hexSize;
+  const coordMap = {};
+  let id = 0;
+  for (let q = -R; q <= R; q++) {
+    for (let r = -R; r <= R; r++) {
+      if (Math.abs(q + r) > R) continue;
+      const pos = axialToPixel(q, r, sz);
+      nodes.push({
+        id, q, r, x: pos.x, y: pos.y,
+        fixed: true,
+        active: true, frozen: false, ghost: false, shielded: 0,
+        age: 0, activity: 1, sedimentation: 0, diedAt: null,
+        depth: 0, displayDepth: 0, exposure: 0
+      });
+      coordMap[q+','+r] = id;
+      id++;
+    }
+  }
+  maxId = id - 1;
+  nodes.forEach(n => {
+    hexAxialNbs(n.q, n.r).forEach(([nq, nr]) => {
+      const nbId = coordMap[nq+','+nr];
+      if (nbId !== undefined && nbId > n.id) {
+        edges.push({ from: n.id, to: nbId, active: true, fragile: false });
+      }
+    });
+  });
+
+  // Initialize depth properly
+  computeExposure();
+  computeDepthsHard();
+  nodes.forEach(n => { n.displayDepth = n.depth; });
+
+  peakHope = calcHope();
+  hopeHistory = [peakHope];
+  intHistory = [countInterior()];
+}
+
+// ============================================================
+// EXPOSURE + DEPTH (soft model)
+// ============================================================
+function computeExposure() {
+  // Exposure score for each active node
+  alive().forEach(n => {
+    let exposure = 0;
+
+    // Outer ring of hex grid
+    if (n.fixed) {
+      const R = CFG.rings;
+      const maxCoord = Math.max(Math.abs(n.q), Math.abs(n.r), Math.abs(n.q + n.r));
+      if (maxCoord === R) exposure += 1.0;
+      else if (maxCoord === R - 1) exposure += 0.3;
+    }
+
+    // Extended (frontier) nodes
+    if (!n.fixed) exposure += 1.2;
+
+    // Frozen status
+    if (n.frozen) exposure += 1.5;
+
+    // Adjacent to ghosts or missing edges (dead edges)
+    let voidAdj = 0;
+    edges.forEach(e => {
+      if (e.from === n.id || e.to === n.id) {
+        const oid = e.from === n.id ? e.to : e.from;
+        const o = node(oid);
+        if (!o) return;
+        if (!e.active || !o.active || o.ghost) voidAdj += 0.6;
+      }
+    });
+    exposure += voidAdj;
+
+    // Adjacent to frozen nodes
+    const activeNbs = nbs(n.id);
+    const frozenNbs = activeNbs.filter(nid => { const nn = node(nid); return nn && nn.frozen; }).length;
+    exposure += frozenNbs * 0.5;
+
+    // Low degree amplifies exposure
+    if (activeNbs.length < 3) exposure += (3 - activeNbs.length) * 0.4;
+
+    // Sedimentation amplifies
+    exposure += n.sedimentation * 0.3;
+
+    n.exposure = exposure;
+  });
+}
+
+function computeDepthsHard() {
+  // BFS from boundary seeds (nodes whose exposure crosses threshold)
+  const activeSet = new Set(alive().map(n => n.id));
+  const boundary = [];
+
+  alive().forEach(n => {
+    if (n.exposure >= CFG.exposureThreshold || n.frozen) {
+      n.depth = 0;
+      boundary.push(n.id);
+    }
+  });
+
+  // BFS inward
+  const visited = new Set(boundary);
+  let frontier = [...boundary];
+  let d = 1;
+  while (frontier.length > 0) {
+    const next = [];
+    frontier.forEach(nid => {
+      nbs(nid).forEach(nbId => {
+        if (!visited.has(nbId) && activeSet.has(nbId)) {
+          visited.add(nbId);
+          const nn = node(nbId);
+          if (nn) nn.depth = d;
+          next.push(nbId);
+        }
+      });
+    });
+    frontier = next;
+    d++;
+  }
+
+  // Anything unvisited (isolated cluster) — set to 0
+  alive().forEach(n => { if (!visited.has(n.id)) n.depth = 0; });
+}
+
+function updateDisplayDepth() {
+  const a = CFG.depthSmoothAlpha;
+  alive().forEach(n => {
+    n.displayDepth = a * n.displayDepth + (1 - a) * n.depth;
+  });
+}
+
+function calcHope() {
+  return alive().reduce((s, n) => s + n.depth, 0);
+}
+
+function countInterior() {
+  return alive().filter(n => n.depth > 0).length;
+}
+
+// ============================================================
+// GHOST
+// ============================================================
+function ghostDecayWindow() {
+  // Shorter window as sedimentation rises
+  const avgSed = alive().length > 0
+    ? alive().reduce((s, n) => s + n.sedimentation, 0) / alive().length
+    : 0;
+  const shrinkFactor = Math.max(0.4, 1 - avgSed * 0.5);
+  return Math.max(4, Math.round(CFG.ghostDecayBase * shrinkFactor));
+}
+
+function isRecoverable(n) {
+  if (!n.ghost) return false;
+  const window = ghostDecayWindow();
+  if (turn - (n.diedAt || 0) > window) return false;
+  for (const e of edges) {
+    if (e.from === n.id || e.to === n.id) {
+      const oid = e.from === n.id ? e.to : e.from;
+      const o = node(oid);
+      if (o && o.active && !o.ghost) return true;
+    }
+  }
+  return false;
+}
+
+function recGhosts() { return nodes.filter(n => n.ghost && isRecoverable(n)); }
+function sedGhosts() { return nodes.filter(n => n.ghost && !isRecoverable(n)); }
+
+function recoverableEdges() {
+  return edges.filter(e => {
+    if (e.active) return false;
+    const a = node(e.from), b = node(e.to);
+    if (!a || !b) return false;
+    const aL = a.active && !a.ghost, bL = b.active && !b.ghost;
+    const aR = a.ghost && isRecoverable(a), bR = b.ghost && isRecoverable(b);
+    return (aL && bR) || (bL && aR) || (aL && bL); // edges between living nodes that were cut also recoverable
+  });
+}
+
+// ============================================================
+// NARRATIVES
+// ============================================================
+const NAR = {
+  poetic: {
+    love: [
+      "Two distant regions are woven together. The future thickens.",
+      "A new thread connects them. What was separate is now mutual — and deeper.",
+      "The graph finds a new way to hold itself together.",
+      "Woven. The interior breathes."
+    ],
+    loveGrow: [
+      "And from the new thread, a frontier blooms.",
+      "The weave was enough. Something new appears at the edge.",
+      "Cohesion crossed a threshold. The future reaches outward on its own."
+    ],
+    fear: [
+      "The exposed edge hardens. The present is safer.",
+      "A wall of frozen nodes. Protection, paid for in generativity.",
+      "Shielding goes up. The region holds — but will not grow.",
+      "You defend what's there. The cost is what could have been."
+    ],
+    compress: [
+      "The weak branches fall. Cleaner. Clearer.",
+      "Pruned. The graph looks more intelligent now.",
+      "Simplified. Efficient. This always feels right.",
+      "The interior is thinner. The charts are falling. You may not notice."
+    ],
+    regret: [
+      "A recent loss returns. The door that was closing reopens.",
+      "What was nearly lost is restored.",
+      "The graph remembers what you almost let go.",
+      "A fragile reconnection. Do not waste it."
+    ],
+    regretThaw: [
+      "A frozen node thaws. What was shielded can move again.",
+      "The ice breaks. The defended comes back into play.",
+      "A fear-frozen region returns to life. Defense undone."
+    ],
+    regretCompressed: [
+      "A deliberate cut is undone. The path returns, whole.",
+      "What was pruned for clarity is restored — with all its connections.",
+      "The compression is reversed. The counterfactual was never really gone."
+    ],
+    regretSedimented: [
+      "A drift loss is caught, barely. It comes back fragile.",
+      "You reach into sediment and pull something back. It's brittle.",
+      "What faded into disuse returns, but only as a thin thread."
+    ],
+    regretFail: [
+      "Nothing left to reopen. The losses have hardened.",
+      "You reach backward. Only stone answers.",
+      "Too late. The window has narrowed past what's left."
+    ],
+    sed: [
+      "Unused paths grow brittle.",
+      "Activity is fading at the edges.",
+      "Somewhere, a future you didn't visit is freezing."
+    ],
+    endHope: "The graph remains. The interior does not.<br><br>Hope is exhausted. You can still see the structure. It can still be drawn. But there is no depth left — no buffering, no reopenable future.<br><br>Nothing went wrong. And nothing will.",
+    endTitle: "Nothing went wrong."
+  },
+  systems: {
+    love: [
+      "W applied. Bridge between regions. Local connectivity raised.",
+      "Superadditive coupling. ΔH(t) > 0 expected next cycle.",
+      "New adjacency relation. Interior redundancy increased."
+    ],
+    loveGrow: [
+      "Cohesion threshold crossed. Autonomous growth triggered.",
+      "Boundary node qualified. New frontier generated."
+    ],
+    fear: [
+      "F applied. Boundary shielded, frozen nodes added.",
+      "Conservative stabilization. dH/dt(F) < 0.",
+      "Exposure capped. Generativity contracted."
+    ],
+    compress: [
+      "K applied. Low-depth nodes pruned.",
+      "Degenerate compression: dH/dt < 0 while predictability rises.",
+      "Interior traded for short-horizon legibility."
+    ],
+    regret: [
+      "∇R ≠ 0. Counterfactual path restored.",
+      "Anti-sedimentation stabilizer active."
+    ],
+    regretThaw: [
+      "Frozen node thawed. Shielding removed. Node re-entered generative pool.",
+      "F-applied freeze reversed. Node returns with full activity."
+    ],
+    regretCompressed: [
+      "K-cut reversed. Counterfactual was coherent: full restoration.",
+      "Compression loss recovered. All edges restored, non-fragile."
+    ],
+    regretSedimented: [
+      "Sedimentation loss recovered. ∇R was weak: restoration is fragile.",
+      "Drift-loss partially restored. Residual sedimentation persists."
+    ],
+    regretFail: [
+      "∇R → 0. No recoverable geometry.",
+      "Sedimentation complete in all ghost regions."
+    ],
+    sed: [
+      "Background sedimentation advancing.",
+      "Edge fragility increasing in unused regions."
+    ],
+    endHope: "H(t) = 0.<br><br>The system persists in a metastable brittle phase. Structure is nominally intact but ∇R → 0 and interior measure is exhausted.<br><br>Sedimentation complete.",
+    endTitle: "H(t) → 0"
+  },
+  minimal: {
+    love: ["Woven.", "Threaded.", "Connected."],
+    loveGrow: ["Grew.", "Sprouted.", "Extended."],
+    fear: ["Frozen.", "Hardened.", "Shielded."],
+    compress: ["Pruned.", "Thinner.", "Cleaner."],
+    regret: ["Reopened.", "Restored."],
+    regretThaw: ["Thawed.", "Unfrozen."],
+    regretCompressed: ["Restored.", "Recovered whole."],
+    regretSedimented: ["Reopened.", "Barely."],
+    regretFail: ["Gone.", "Too late."],
+    sed: ["Fading.", "Hardening."],
+    endHope: "The graph remains. The interior does not.",
+    endTitle: "—"
+  }
+};
+
+function narrate(k) {
+  const p = NAR[CFG.style][k]; if (!p) return;
+  const t = Array.isArray(p) ? p[Math.floor(Math.random() * p.length)] : p;
+  const el = document.getElementById('nartxt');
+  el.style.opacity = 0;
+  setTimeout(() => { el.textContent = t; el.style.opacity = 1; }, 180);
+}
+
+// ============================================================
+// OPERATORS (system chooses locus)
+// ============================================================
+function applyOp(type) {
+  if (gameOver) return;
+  let result = null;
+  if (type === 'love') result = opLove();
+  else if (type === 'fear') result = opFear();
+  else if (type === 'compress') result = opCompress();
+  else if (type === 'regret') result = opRegret();
+
+  if (result === 'fail') return; // no turn consumed
+
+  turn++;
+  bgSedimentation();
+  computeExposure();
+  computeDepthsHard();
+
+  // Growth is NOT a general post-operator pass. It happens only inside Weave,
+  // scoped to the region around the bridge, and only when cohesion is sufficient.
+  // Other operators (Fear, Compress, Regret) can never produce growth.
+
+  hopeHistory.push(calcHope());
+  intHistory.push(countInterior());
+  if (hopeHistory.length > 200) { hopeHistory.shift(); intHistory.shift(); }
+  peakHope = Math.max(peakHope, calcHope());
+
+  updateUI();
+  checkEnd();
+}
+
+// --- Love: bridge two well-separated regions ---
+function opLove() {
+  const an = alive().filter(n => !n.frozen);
+  if (an.length < 2) return 'fail';
+
+  // Find candidate pairs: not already connected, moderate distance, ideally both interior-ish
+  let bestPair = null, bestScore = -Infinity;
+
+  // Sample candidate pairs (up to ~200 for perf)
+  const samples = Math.min(200, an.length * an.length);
+  for (let i = 0; i < samples; i++) {
+    const a = an[Math.floor(Math.random() * an.length)];
+    const b = an[Math.floor(Math.random() * an.length)];
+    if (a.id === b.id) continue;
+    // Already connected?
+    const exists = edges.some(e => e.active && ((e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id)));
+    if (exists) continue;
+
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    // Score: prefer moderate distance (~2-3 hex units), higher depths, more connections
+    const idealDist = CFG.hexSize * 2.5;
+    const distScore = -Math.abs(dist - idealDist) / idealDist;
+    const depthScore = (a.depth + b.depth) * 0.5;
+    const degScore = (nbs(a.id).length + nbs(b.id).length) * 0.15;
+    const score = distScore + depthScore + degScore;
+
+    if (score > bestScore) { bestScore = score; bestPair = [a, b]; }
+  }
+
+  if (!bestPair) {
+    // Fallback: any non-adjacent pair
+    for (const a of an) {
+      for (const b of an) {
+        if (a.id >= b.id) continue;
+        const exists = edges.some(e => e.active && ((e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id)));
+        if (!exists) { bestPair = [a, b]; break; }
+      }
+      if (bestPair) break;
+    }
+  }
+
+  if (!bestPair) return 'fail';
+
+  const [a, b] = bestPair;
+  // Add bridge
+  const existing = edges.find(e => (e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id));
+  if (existing) { existing.active = true; existing.fragile = false; }
+  else edges.push({ from: a.id, to: b.id, active: true, fragile: false });
+
+  // Boost activity, lower sedimentation — BFS 2 hops with decaying strength
+  const boostedSet = new Set();
+  [a, b].forEach(seed => {
+    let frontier = [seed.id];
+    for (let hop = 0; hop <= CFG.weavePropagationHops; hop++) {
+      const strength = 1 - hop * 0.35; // hop 0: 1.0, hop 1: 0.65, hop 2: 0.3
+      const next = [];
+      frontier.forEach(nid => {
+        if (boostedSet.has(nid)) return;
+        boostedSet.add(nid);
+        const nn = node(nid);
+        if (!nn || !nn.active || nn.ghost) return;
+        nn.activity = Math.min(1, nn.activity + 0.35 * strength);
+        nn.sedimentation = Math.max(0, nn.sedimentation - 0.18 * strength);
+        if (hop < CFG.weavePropagationHops) {
+          nbs(nid).forEach(nbId => next.push(nbId));
+        }
+      });
+      frontier = next;
+    }
+  });
+
+  // Scoped growth: Weave may trigger ONE new frontier node, but only if the bridge
+  // created sufficient cohesion in its locus. Growth is earned, not automatic.
+  const boostedArr = [...boostedSet].map(id => node(id)).filter(n => n && n.active && !n.ghost);
+
+  const growthCandidates = boostedArr.filter(n => {
+    if (n.frozen) return false;
+    const deg = nbs(n.id).length;
+    if (deg < 4) return false; // cohesion threshold
+    if (n.sedimentation > 0.4) return false;
+    return n.depth === 0 || (!n.fixed);
+  });
+
+  let grew = false;
+  if (growthCandidates.length > 0) {
+    const scored = growthCandidates.map(n => {
+      const interiorSupport = nbs(n.id).reduce((s, id) => {
+        const nn = node(id); return s + (nn ? nn.depth : 0);
+      }, 0);
+      return { n, score: nbs(n.id).length + interiorSupport * 0.5 - n.sedimentation * 2 };
+    }).sort((x, y) => y.score - x.score);
+
+    if (scored[0].score > 4) {
+      sproutFrom(scored[0].n);
+      grew = true;
+    }
+  }
+
+  narrate(grew ? 'loveGrow' : 'love');
+  return 'ok';
+}
+
+// --- Fear: shield the most exposed boundary cluster ---
+function opFear() {
+  const an = alive().filter(n => !n.frozen && n.id !== findPlayerNode());
+  if (!an.length) return 'fail';
+
+  // Find most exposed node
+  const sorted = [...an].sort((a, b) => b.exposure - a.exposure);
+  const seed = sorted[0];
+  if (!seed || seed.exposure < 0.5) return 'fail';
+
+  // Collect seed + its most exposed neighbors
+  const cluster = [seed];
+  nbs(seed.id).forEach(nid => {
+    const nn = node(nid);
+    if (nn && !nn.frozen && nn.exposure > 0.5) cluster.push(nn);
+  });
+
+  // Shield them (temporary) and freeze 1-3
+  let frozenCount = 0;
+  cluster.slice(0, 3).forEach((n, i) => {
+    n.shielded = Math.max(n.shielded, 3); // shielded for 3 turns
+    if (i < 2 && !n.frozen) { n.frozen = true; frozenCount++; }
+  });
+
+  // Cut one peripheral edge
+  const periphEdges = aliveEdges().filter(e => {
+    const a = node(e.from), b = node(e.to);
+    if (!a || !b) return false;
+    return (cluster.includes(a) || cluster.includes(b)) &&
+           (a.exposure > 0.8 || b.exposure > 0.8);
+  });
+  if (periphEdges.length > 1) periphEdges[0].active = false;
+
+  narrate('fear');
+  return 'ok';
+}
+
+function findPlayerNode() {
+  // Use center-most fixed node as "anchor"
+  const fixed = alive().filter(n => n.fixed);
+  if (!fixed.length) return -1;
+  return fixed.reduce((b, n) => (Math.hypot(n.x,n.y) < Math.hypot(b.x,b.y) ? n : b)).id;
+}
+
+// --- Compress: prune weakest ---
+function opCompress() {
+  const anchor = findPlayerNode();
+  const an = alive().filter(n => !n.frozen && n.id !== anchor);
+  if (!an.length) return 'fail';
+
+  // Find weakest: low depth, low degree
+  const sorted = [...an].sort((a, b) => {
+    const aScore = a.depth * 10 + nbs(a.id).length;
+    const bScore = b.depth * 10 + nbs(b.id).length;
+    return aScore - bScore;
+  });
+
+  let removed = 0;
+  for (let i = 0; i < 2 && i < sorted.length; i++) {
+    const n = sorted[i];
+    if (nbs(n.id).length <= 2 && n.depth <= 1) {
+      killNode(n, 'compression');
+      removed++;
+    }
+  }
+
+  if (!removed) {
+    // Just cut a weak edge
+    const ae = aliveEdges();
+    if (ae.length) {
+      const weakEdge = ae.sort((a, b) => {
+        const na = node(a.from), nb = node(a.to);
+        const nc = node(b.from), nd = node(b.to);
+        const scoreA = (na.depth + nb.depth);
+        const scoreB = (nc.depth + nd.depth);
+        return scoreA - scoreB;
+      })[0];
+      if (weakEdge) weakEdge.active = false;
+    }
+  }
+
+  // Boost activity of remaining (the seduction: feels clean)
+  alive().forEach(n => { n.activity = Math.min(1, n.activity + 0.1); });
+
+  narrate('compress');
+  return 'ok';
+}
+
+function killNode(n, cause) {
+  n.active = false; n.ghost = true; n.diedAt = turn; n.lossCause = cause || 'unknown';
+  totalLost++;
+  edges.forEach(e => { if ((e.from === n.id || e.to === n.id) && e.active) e.active = false; });
+  cleanDisc();
+}
+
+function cleanDisc() {
+  alive().forEach(n => {
+    if (n.fixed && Math.abs(n.q) + Math.abs(n.r) < 1) return; // don't kill center
+    if (nbs(n.id).length === 0) {
+      n.active = false; n.ghost = true;
+      n.diedAt = n.diedAt || turn;
+      n.lossCause = n.lossCause || 'sedimentation'; // disconnection = sedimentation
+      totalLost++;
+    }
+  });
+}
+
+// --- Regret: three modes, prioritized ---
+// Mode 1: Thaw a frozen node (never died, just inert — full restoration)
+// Mode 2: Restore a compression loss (actively cut — comes back stable with edges)
+// Mode 3: Recover a sedimentation loss (drifted away — comes back fragile)
+function opRegret() {
+  // Mode 1 priority: thaw the most-interior frozen node
+  const frozenNodes = alive().filter(n => n.frozen);
+  if (frozenNodes.length > 0) {
+    // Prefer frozen nodes that were interior (high depth neighbors)
+    const sorted = frozenNodes.sort((a, b) => {
+      const aSupport = nbs(a.id).reduce((s, id) => { const nn = node(id); return s + (nn ? nn.depth : 0); }, 0);
+      const bSupport = nbs(b.id).reduce((s, id) => { const nn = node(id); return s + (nn ? nn.depth : 0); }, 0);
+      return bSupport - aSupport;
+    });
+    const target = sorted[0];
+    target.frozen = false;
+    target.activity = 0.7;
+    target.sedimentation = Math.max(0, target.sedimentation - 0.4);
+    target.shielded = 2; // brief protection after thaw
+    narrate('regretThaw');
+    return 'ok';
+  }
+
+  // Mode 2: Restore a compression loss (freshest compression ghost within window)
+  const compressedGhosts = recGhosts()
+    .filter(n => n.lossCause === 'compression')
+    .sort((a, b) => (b.diedAt || 0) - (a.diedAt || 0));
+
+  if (compressedGhosts.length > 0) {
+    const g = compressedGhosts[0];
+    g.active = true; g.ghost = false; g.frozen = false;
+    g.activity = 0.75;
+    g.sedimentation = 0.1;
+    g.diedAt = null;
+    g.lossCause = null;
+    totalLost = Math.max(0, totalLost - 1);
+
+    // Restore its former edges — stable, not fragile (deliberate cut means coherent counterfactual)
+    let restored = 0;
+    edges.forEach(e => {
+      if (e.active) return;
+      if (e.from === g.id || e.to === g.id) {
+        const oid = e.from === g.id ? e.to : e.from;
+        const o = node(oid);
+        if (o && o.active && !o.ghost && restored < 3) {
+          e.active = true; e.fragile = false;
+          restored++;
+        }
+      }
+    });
+    narrate('regretCompressed');
+    return 'ok';
+  }
+
+  // Mode 3: Recover a sedimented loss (fragile)
+  const sedimentedGhosts = recGhosts()
+    .filter(n => n.lossCause !== 'compression')
+    .sort((a, b) => (b.diedAt || 0) - (a.diedAt || 0));
+
+  if (sedimentedGhosts.length > 0) {
+    const g = sedimentedGhosts[0];
+    g.active = true; g.ghost = false; g.frozen = false;
+    g.activity = 0.4;        // lower — weaker recovery
+    g.sedimentation = 0.3;   // residual sedimentation lingers
+    g.diedAt = null;
+    g.lossCause = null;
+    totalLost = Math.max(0, totalLost - 1);
+
+    // Restore one edge, fragile
+    for (const e of edges) {
+      if (!e.active && (e.from === g.id || e.to === g.id)) {
+        const oid = e.from === g.id ? e.to : e.from;
+        const o = node(oid);
+        if (o && o.active && !o.ghost) { e.active = true; e.fragile = true; break; }
+      }
+    }
+    narrate('regretSedimented');
+    return 'ok';
+  }
+
+  // Mode 4 (last resort): a dead edge between living nodes
+  const re = recoverableEdges();
+  if (re.length) {
+    const e = re[0];
+    e.active = true; e.fragile = true;
+    narrate('regretSedimented');
+    return 'ok';
+  }
+
+  narrate('regretFail');
+  return 'fail';
+}
+
+// ============================================================
+// GROWTH HELPERS (called only from opLove)
+// ============================================================
+function sproutFrom(parent) {
+  maxId++;
+  const angle = Math.atan2(parent.y, parent.x) + (Math.random() - 0.5) * 0.7;
+  const dist = CFG.hexSize * (0.95 + Math.random() * 0.3);
+  const nn = {
+    id: maxId, q: null, r: null,
+    x: parent.x + Math.cos(angle) * dist,
+    y: parent.y + Math.sin(angle) * dist,
+    fixed: false, active: true, frozen: false, ghost: false, shielded: 0,
+    age: 0, activity: 1, sedimentation: 0, diedAt: null,
+    depth: 0, displayDepth: 0, exposure: 1.2
+  };
+  nodes.push(nn);
+  extVels[nn.id] = { vx: 0, vy: 0 };
+  edges.push({ from: parent.id, to: nn.id, active: true, fragile: false });
+
+  // Possibly bridge to a nearby node
+  if (Math.random() < 0.4) {
+    const near = alive().filter(n => {
+      if (n.id === parent.id || n.id === nn.id) return false;
+      return Math.hypot(n.x - nn.x, n.y - nn.y) < CFG.hexSize * 1.6;
+    });
+    if (near.length) {
+      const bridge = near[Math.floor(Math.random() * near.length)];
+      edges.push({ from: nn.id, to: bridge.id, active: true, fragile: false });
+    }
+  }
+}
+
+// ============================================================
+// SEDIMENTATION
+// ============================================================
+function bgSedimentation() {
+  if (turn < CFG.sedGrace) return;
+  const rate = CFG.sedimentationRate;
+
+  // First compute neighborhood activity averages — active neighborhoods protect their nodes
+  const nbActivityMap = {};
+  alive().forEach(n => {
+    const nbIds = nbs(n.id);
+    if (nbIds.length === 0) { nbActivityMap[n.id] = 0; return; }
+    const avgAct = nbIds.reduce((s, id) => {
+      const nn = node(id); return s + (nn ? nn.activity : 0);
+    }, 0) / nbIds.length;
+    nbActivityMap[n.id] = avgAct;
+  });
+
+  nodes.forEach(n => {
+    if (!n.active || n.ghost) return;
+    n.age++;
+
+    // Activity decay scales inversely with neighborhood activity
+    const nbProtection = nbActivityMap[n.id] || 0;
+    const effectiveDecay = CFG.activityDecay * (1 - nbProtection * 0.5);
+    n.activity = Math.max(0, n.activity - effectiveDecay);
+
+    // Sedimentation rises slowly, but active neighborhoods slow it
+    n.sedimentation = Math.min(1, n.sedimentation + rate * 0.25 * (1 - nbProtection * 0.4));
+
+    // Shielded nodes get protection
+    if (n.shielded > 0) {
+      n.shielded--;
+      n.sedimentation = Math.max(0, n.sedimentation - 0.05);
+      n.activity = Math.min(1, n.activity + 0.04); // small activity boost from shield
+    }
+
+    // Freeze low-activity nodes (but not if shielded or recently active neighborhood)
+    if (n.activity < CFG.freezeThreshold && !n.frozen && n.shielded === 0 && nbProtection < 0.3) {
+      if (Math.random() < rate) n.frozen = true;
+    }
+
+    // Frozen nodes: edges decay (but slower than before)
+    if (n.frozen && Math.random() < rate * 0.35) {
+      const ne = aliveEdges().filter(e => e.from === n.id || e.to === n.id);
+      if (ne.length > 1) {
+        const t = ne[Math.floor(Math.random() * ne.length)];
+        t.fragile = true;
+        if (Math.random() < rate * 0.5) t.active = false;
+      }
+    }
+  });
+
+  // Fragile edges break (but slower)
+  aliveEdges().forEach(e => { if (e.fragile && Math.random() < rate * 0.2) e.active = false; });
+
+  cleanDisc();
+
+  // Occasional narration
+  if (turn > 6 && turn % 5 === 0 && nodes.filter(n => n.frozen && n.active).length > 2) {
+    setTimeout(() => { if (!gameOver) narrate('sed'); }, 1200);
+  }
+}
+
+// ============================================================
+// END
+// ============================================================
+function checkEnd() {
+  const h = calcHope();
+  if (h <= 0 && turn > 2) {
+    endGame('hope');
+    return;
+  }
+  if (alive().length <= 1) {
+    endGame('hope');
+    return;
+  }
+}
+
+function endGame(type) {
+  gameOver = true;
+  const s = NAR[CFG.style];
+  document.getElementById('et').textContent = s.endTitle;
+  document.getElementById('ebody').innerHTML = s.endHope;
+  document.getElementById('estats').innerHTML =
+    `Turns: ${turn} · Peak H(t): ${peakHope} · Final H(t): ${calcHope()} · Nodes remaining: ${alive().length} · Lost: ${totalLost}`;
+  setTimeout(() => document.getElementById('endscr').classList.add('vis'), 900);
+}
+
+// ============================================================
+// UI
+// ============================================================
+function updateUI() {
+  document.getElementById('tnum').textContent = turn;
+  const h = calcHope();
+  const intCount = countInterior();
+  const an = alive();
+  const boundary = an.filter(n => n.depth === 0 && !n.frozen).length;
+  const frozen = an.filter(n => n.frozen).length;
+
+  document.getElementById('s-h').textContent = h;
+  document.getElementById('s-int').textContent = intCount;
+  document.getElementById('s-bnd').textContent = boundary;
+  document.getElementById('s-frz').textContent = frozen;
+  document.getElementById('s-lost').textContent = totalLost;
+  document.getElementById('s-rec').textContent = recGhosts().length;
+
+  document.getElementById('cv-hope').textContent = h;
+  document.getElementById('cv-int').textContent = intCount;
+
+  // Enable/disable regret
+  const rb = document.getElementById('b-regret');
+  const hasRec = recGhosts().length > 0 || recoverableEdges().length > 0;
+  rb.disabled = !hasRec;
+
+  // Disable all if game over
+  if (gameOver) {
+    ['love','fear','compress','regret'].forEach(t => {
+      document.getElementById('b-' + t).disabled = true;
+    });
+  }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function resize() {
+  const w = document.getElementById('cwrap');
+  W = w.clientWidth; H = w.clientHeight;
+  cv.width = W * devicePixelRatio; cv.height = H * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  [chHope, chInt].forEach(c => {
+    const r = c.getBoundingClientRect();
+    c.width = r.width * devicePixelRatio;
+    c.height = r.height * devicePixelRatio;
+  });
+  chxHope.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  chxInt.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+function physics() {
+  const ext = alive().filter(n => !n.fixed);
+  if (!ext.length) return;
+  const all = alive();
+  ext.forEach(n => {
+    if (!extVels[n.id]) extVels[n.id] = { vx: 0, vy: 0 };
+    let fx = 0, fy = 0;
+    all.forEach(o => {
+      if (o.id === n.id) return;
+      const dx = n.x - o.x, dy = n.y - o.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const f = 1600 / (d * d);
+      fx += dx / d * f; fy += dy / d * f;
+    });
+    aliveEdges().forEach(e => {
+      if (e.from !== n.id && e.to !== n.id) return;
+      const oid = e.from === n.id ? e.to : e.from;
+      const o = node(oid); if (!o || !o.active) return;
+      const dx = o.x - n.x, dy = o.y - n.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const f = (d - CFG.hexSize) * 0.007;
+      fx += dx / d * f; fy += dy / d * f;
+    });
+    extVels[n.id].vx = (extVels[n.id].vx + fx) * 0.8;
+    extVels[n.id].vy = (extVels[n.id].vy + fy) * 0.8;
+    n.x += extVels[n.id].vx;
+    n.y += extVels[n.id].vy;
+  });
+}
+
+function depthColor(d, activity, frozen, shielded) {
+  if (frozen) {
+    const a = 0.3 + activity * 0.2;
+    return `rgba(74,72,68,${a})`;
+  }
+
+  const a = 0.5 + activity * 0.45;
+  const maxD = 4;
+  const t = Math.min(d / maxD, 1);
+
+  // Amber (200,168,78) -> olive (150,160,90) -> green (90,154,104) -> deep green (60,130,90)
+  let r, g, b;
+  if (t < 0.33) {
+    const u = t / 0.33;
+    r = 200 - u * 50;
+    g = 168 - u * 8;
+    b = 78 + u * 12;
+  } else if (t < 0.66) {
+    const u = (t - 0.33) / 0.33;
+    r = 150 - u * 60;
+    g = 160 - u * 6;
+    b = 90 + u * 14;
+  } else {
+    const u = (t - 0.66) / 0.34;
+    r = 90 - u * 30;
+    g = 154 - u * 24;
+    b = 104 - u * 14;
+  }
+
+  let color = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
+
+  if (shielded > 0) {
+    // Overlay slight blue tint
+    return `rgba(${Math.round(r*0.7 + 112*0.3)},${Math.round(g*0.7 + 136*0.3)},${Math.round(b*0.7 + 168*0.3)},${a})`;
+  }
+  return color;
+}
+
+function depthGlow(d) {
+  const t = Math.min(d / 4, 1);
+  if (t < 0.4) return null;
+  const r = 90 - t * 30, g = 154 - t * 24, b = 104 - t * 14;
+  return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},0.15)`;
+}
+
+function calcView() {
+  let mx = 200;
+  nodes.forEach(n => { if (n.active || n.ghost) { const r = Math.hypot(n.x, n.y); if (r > mx) mx = r; } });
+  // Reserve 140px at bottom for charts, so use a bit less vertical
+  const usableH = H - 140;
+  return Math.min(1.3, Math.min(W * 0.42, usableH * 0.42) / mx);
+}
+
+function sx(x) { return W / 2 + x * vscale; }
+function sy(y) { return (H - 140) / 2 + y * vscale; }
+function wx(px) { return (px - W / 2) / vscale; }
+function wy(py) { return (py - (H - 140) / 2) / vscale; }
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  vscale = calcView();
+
+  // Ghost edges (recoverable)
+  const re = recoverableEdges();
+  re.forEach(e => {
+    const a = node(e.from), b = node(e.to); if (!a || !b) return;
+    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = 'rgba(106,88,72,0.3)';
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(sx(a.x), sy(a.y)); ctx.lineTo(sx(b.x), sy(b.y)); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Active edges — tinted by min endpoint displayDepth
+  aliveEdges().forEach(e => {
+    const a = node(e.from), b = node(e.to); if (!a || !b) return;
+    const minD = Math.min(a.displayDepth || 0, b.displayDepth || 0);
+    const t = Math.min(minD / 4, 1);
+    const alpha = e.fragile ? 0.22 : (0.3 + t * 0.35);
+    const r = 120 - t * 40, g = 120 - t * 5, b2 = 80 + t * 10;
+    ctx.lineWidth = e.fragile ? 0.6 : (0.9 + t * 0.6);
+    ctx.strokeStyle = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b2)},${alpha})`;
+    if (e.fragile) ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(sx(a.x), sy(a.y)); ctx.lineTo(sx(b.x), sy(b.y)); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Sedimented ghosts
+  nodes.forEach(n => {
+    if (!n.ghost || isRecoverable(n)) return;
+    ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), 1.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(25,23,18,0.3)'; ctx.fill();
+  });
+
+  // Recoverable ghosts
+  nodes.forEach(n => {
+    if (!n.ghost || !isRecoverable(n)) return;
+    ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(106,88,72,0.35)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(106,88,72,0.25)'; ctx.lineWidth = 0.8; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), 6.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Active nodes
+  ctx.shadowBlur = 0;
+  alive().forEach(n => {
+    const isHov = n.id === hoveredNode;
+    const r = n.fixed ? (4 + n.activity * 2.5) : (3.5 + n.activity * 2);
+    const fill = depthColor(n.displayDepth, n.activity, n.frozen, n.shielded);
+
+    const glow = n.frozen ? null : depthGlow(n.displayDepth);
+    if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 6; }
+
+    ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), r, 0, Math.PI * 2);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Shielded halo
+    if (n.shielded > 0) {
+      ctx.strokeStyle = `rgba(112,136,168,${0.3 + n.shielded * 0.1})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), r + 4, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Frozen ring
+    if (n.frozen) {
+      ctx.strokeStyle = 'rgba(60,58,52,0.35)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), r + 3, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Hover
+    if (isHov) {
+      ctx.strokeStyle = 'rgba(220,215,200,0.3)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(sx(n.x), sy(n.y), r + 4, 0, Math.PI * 2); ctx.stroke();
+    }
+  });
+
+  // Render charts
+  renderCharts();
+}
+
+function renderChart(ctxC, canvasC, data, color, fill) {
+  const w = canvasC.width / devicePixelRatio;
+  const h = canvasC.height / devicePixelRatio;
+  ctxC.clearRect(0, 0, w, h);
+
+  if (data.length < 2) return;
+
+  const maxVal = Math.max(...data, 1);
+  const minVal = 0;
+  const n = data.length;
+
+  // Fill area under curve
+  ctxC.beginPath();
+  ctxC.moveTo(0, h);
+  data.forEach((v, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - ((v - minVal) / (maxVal - minVal || 1)) * (h - 10) - 5;
+    ctxC.lineTo(x, y);
+  });
+  ctxC.lineTo(w, h);
+  ctxC.closePath();
+  ctxC.fillStyle = fill;
+  ctxC.fill();
+
+  // Line
+  ctxC.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - ((v - minVal) / (maxVal - minVal || 1)) * (h - 10) - 5;
+    if (i === 0) ctxC.moveTo(x, y);
+    else ctxC.lineTo(x, y);
+  });
+  ctxC.strokeStyle = color;
+  ctxC.lineWidth = 1.4;
+  ctxC.stroke();
+}
+
+function renderCharts() {
+  renderChart(chxHope, chHope, hopeHistory, 'rgba(212,197,160,0.9)', 'rgba(212,197,160,0.1)');
+  renderChart(chxInt, chInt, intHistory, 'rgba(112,136,168,0.9)', 'rgba(112,136,168,0.1)');
+}
+
+function animate() {
+  physics();
+  updateDisplayDepth();
+  render();
+  requestAnimationFrame(animate);
+}
+
+// ============================================================
+// MOUSE
+// ============================================================
+cv.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const mx = wx(px), my = wy(py);
+  let closest = null, cd = 22 / vscale;
+  alive().forEach(n => { const d = Math.hypot(n.x - mx, n.y - my); if (d < cd) { cd = d; closest = n; } });
+  hoveredNode = closest ? closest.id : null;
+  cv.style.cursor = closest ? 'help' : 'default';
+
+  const tip = document.getElementById('tip');
+  if (hoveredNode !== null) {
+    const hn = node(hoveredNode);
+    const label = hn.frozen ? 'frozen' : hn.depth > 0 ? `interior (depth ${hn.depth})` : 'boundary';
+    const nb = nbs(hoveredNode).length;
+    const shield = hn.shielded > 0 ? ` · shielded (${hn.shielded})` : '';
+    tip.textContent = `${label} · ${nb} connections · exposure ${hn.exposure.toFixed(1)}${shield}`;
+    tip.style.display = 'block';
+    tip.style.left = (px + 14) + 'px';
+    tip.style.top = (py - 10) + 'px';
+  } else {
+    tip.style.display = 'none';
+  }
+});
+
+cv.addEventListener('mouseleave', () => {
+  hoveredNode = null;
+  document.getElementById('tip').style.display = 'none';
+});
+
+// ============================================================
+// CONFIG
+// ============================================================
+function toggleCfg() { document.getElementById('cfgov').classList.toggle('vis'); }
+function applyCfg() {
+  CFG.rings = parseInt(document.getElementById('cfg-r').value);
+  CFG.style = document.getElementById('cfg-s').value;
+  toggleCfg();
+  restart();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function restart() {
+  gameOver = false;
+  turn = 0;
+  totalLost = 0;
+  peakHope = 0;
+  hoveredNode = null;
+  hopeHistory = [];
+  intHistory = [];
+  document.getElementById('endscr').classList.remove('vis');
+  genGraph();
+  ['love','fear','compress','regret'].forEach(t => {
+    document.getElementById('b-' + t).disabled = false;
+  });
+  updateUI();
+
+  const el = document.getElementById('nartxt');
+  el.textContent = CFG.style === 'systems'
+    ? `Initial state: H(t) = ${calcHope()}. Full interior. All trajectories reopenable.`
+    : CFG.style === 'minimal'
+      ? 'Open.'
+      : 'You stand before a graph of possible futures. The deep green center is the interior — futures still buffered from the void. The amber edge is boundary, where the graph meets what is not. Choose how you want to relate to this.';
+}
+
+window.addEventListener('resize', resize);
+resize();
+genGraph();
+updateUI();
+animate();
+</script>
+</body>
+</html>
