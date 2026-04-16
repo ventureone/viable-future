@@ -2,7 +2,7 @@
 
 An interactive graph game about preserving the space of possible futures under irreversible time.
 
-**[Play it here](https://YOURUSERNAME.github.io/viable-future/)** *(replace with your GitHub Pages URL once live)*
+**[Play it here](https://ventureone.github.io/viable-future/)** 
 
 ---
 
@@ -25,6 +25,8 @@ Based on two notes by Rajendra Wadje (2025):
 
 - *A Generative Grammar of Viable Futures*
 - *Operator Semantics of Viable Futures*
+
+- Based on Viability Theory (Aubin) 
 
 These formalize viability as the preservation of reopenable future interior — a conserved invariant acted upon by a minimal operator algebra. The game is a playable interpretation of that framework.
 
