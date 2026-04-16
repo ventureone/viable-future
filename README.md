@@ -36,7 +36,7 @@ Download `index.html` and open it in any modern browser. No installation, no dep
 
 ## License
 
-* CC BY-SA 4.0 for the creative work.*
+* CC BY-SA 4.0 *
 
 ## Contact
 
