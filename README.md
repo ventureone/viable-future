@@ -21,7 +21,7 @@ Meanwhile, sedimentation runs in the background. Unused paths grow brittle. The 
 
 ## The theoretical basis
 
-Based on two papers by Rajendra Wadje (2025):
+Based on two notes by Rajendra Wadje (2025):
 
 - *A Generative Grammar of Viable Futures*
 - *Operator Semantics of Viable Futures*
@@ -34,7 +34,7 @@ Download `index.html` and open it in any modern browser. No installation, no dep
 
 ## License
 
-*(Add your chosen license here — MIT is common for code, CC BY-SA 4.0 for the creative work. Or all rights reserved if you want.)*
+* CC BY-SA 4.0 for the creative work.*
 
 ## Contact
 
